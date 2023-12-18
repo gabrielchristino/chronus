@@ -1,18 +1,18 @@
 /*#include <WiFi.h>
-#include <ESPmDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+  #include <ESPmDNS.h>
+  #include <WiFiUdp.h>
+  #include <ArduinoOTA.h>
 
-const char* ssid = "gtchris100";
-const char* password = "carsled100";
+  const char* ssid = "gtchris100";
+  const char* password = "carsled100";
 
-void beginOTA() {
+  void beginOTA() {
   Serial.begin(115200);
-  ESP_LOGI(LOG_TAG, "Booting");
+  //ESP_LOGI(LOG_TAG, "Booting");
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    ESP_LOGI(LOG_TAG, "Connection Failed! Rebooting...");
+    //ESP_LOGI(LOG_TAG, "Connection Failed! Rebooting...");
     delay(5000);
     ESP.restart();
   }
@@ -42,13 +42,13 @@ void beginOTA() {
       //ESP_LOGI(LOG_TAG, "Start updating " + type);
     })
     .onEnd([]() {
-      ESP_LOGI(LOG_TAG, "\nEnd");
+      //ESP_LOGI(LOG_TAG, "\nEnd");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      ESP_LOGI(LOG_TAG, "Progress: %u%%\r", (progress / (total / 100)));
+      //ESP_LOGI(LOG_TAG, "Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
-      ESP_LOGI(LOG_TAG, "Error[%u]: ", error);
+      //ESP_LOGI(LOG_TAG, "Error[%u]: ", error);
       if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
       else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
       else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
@@ -58,11 +58,11 @@ void beginOTA() {
 
   ArduinoOTA.begin();
 
-  ESP_LOGI(LOG_TAG, "Ready");
-  ESP_LOGI(LOG_TAG, "IP address: ");
+  //ESP_LOGI(LOG_TAG, "Ready");
+  //ESP_LOGI(LOG_TAG, "IP address: ");
   Serial.println(WiFi.localIP());
-}
+  }
 
-void handleOTA() {
+  void handleOTA() {
   ArduinoOTA.handle();
-}*/
+  }*/

@@ -1,22 +1,17 @@
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer, esp_ble_gatts_cb_param_t *param) {
-      ESP_LOGI(LOG_TAG, "Device connected %s", BLEAddress(param->connect.remote_bda).toString().c_str());
       MyClient* pMyClient = new MyClient();
-      pMyClient->setStackSize(18000);
+      pMyClient->setStackSize(30000);
       pMyClient->start(new BLEAddress(param->connect.remote_bda));
     };
 
     void onDisconnect(BLEServer* pServer) {
-      ESP_LOGI(LOG_TAG, "Device  disconnected");
+      goToSleep();
     }
 };
 
 class MainBLEServer: public Task {
     void run(void *data) {
-      ESP_LOGI(LOG_TAG, "Starting BLE work!");
-      // ESP_LOG_buffer_char(LOG_TAG, LOG_TAG, sizeof(LOG_TAG));
-      // ESP_LOG_buffer_hex(LOG_TAG, LOG_TAG, sizeof(LOG_TAG));
-
       // Initialize device
       BLEDevice::init("Chronvs");
       BLEServer* pServer = BLEDevice::createServer();
@@ -41,7 +36,6 @@ class MainBLEServer: public Task {
       //Start advertising
       pAdvertising->start();
 
-      ESP_LOGI(LOG_TAG, "Advertising started!");
       delay(portMAX_DELAY);
     }
 

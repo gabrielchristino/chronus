@@ -1,3 +1,6 @@
+#define FS_NO_GLOBALS
+
+
 #include "BLEDevice.h"
 #include "BLEServer.h"
 #include "BLEClient.h"
@@ -6,6 +9,9 @@
 #include <esp_bt_main.h>
 #include "Task.h"
 #include <esp_log.h>
+#include <JPEGDecoder.h>
+#include <FS.h>
+//#include "SPIFFS.h" // ESP32 only
 
 struct MESSAGE {
   uint8_t latestMessageID[4];
@@ -16,23 +22,18 @@ struct MESSAGE {
   bool isComplete;
 };
 
-static char LOG_TAG[] = "ChonvsANCS";
+//static char LOG_TAG[] = "ChonvsANCS";
+
+TaskHandle_t task1Handle = NULL;
+
+uint8_t posicaoMenu = 0;
 
 void setup()
 {
-  /*#if defined(BOD_ENABLE)
-    init_bod();
-  #endif*/
-  startScreen();
-  //delay(1000);
-  Serial.begin(115200);
-  SampleSecureServer();
-  setButtons();
-
-//  beginOTA();
+  wakeUpReason();
 }
 void loop()
 {
   //handleOTA();
-  touch();
+  readButtons();
 }

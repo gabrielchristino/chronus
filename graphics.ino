@@ -11,10 +11,10 @@
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 
-bool displayOn = false;
-
 int lastTimeDisplay = 0;
 int nowTimeDisplay = 0;
+
+RTC_DATA_ATTR int screenTime = 30000;
 
 GFXcanvas16 canvas(154, 74);
 
@@ -36,7 +36,7 @@ String getValue(String data, char separator, int index)
   return found > index ? data.substring(strIndex[0], strIndex[1]) : "";
 }
 
-String getHora(String date) {
+String getHoraNotificacao(String date) {
   //String ano = date.substring(0,4);
   //String mes = date.substring(4,6);
   //String dia = date.substring(6,8);
@@ -54,53 +54,49 @@ void getApp(String title) {
   }
 }
 
-class MainGraphics: public Task {
-    void run(void* data) {
-      while (1) {
-        nowTimeDisplay = millis();
-        if (displayOn) {
-          if (nowTimeDisplay - lastTimeDisplay > 5000) {
-            tft.enableDisplay(false);
-            displayOn = false;
-            lastTimeDisplay = nowTimeDisplay;
-          }
-        } else {
-          lastTimeDisplay = nowTimeDisplay;
-        }
-      }
-    }
-};
+void resetTimer() {
+  lastTimeDisplay = nowTimeDisplay;
+}
 
-MainGraphics* pMainGraphics;
+void timerScreen(void * parameter) {
+  while (1) {
+    nowTimeDisplay = millis();
+    if (nowTimeDisplay - lastTimeDisplay > screenTime) {
+      if (task1Handle != NULL) vTaskDelete(task1Handle);
+      lastTimeDisplay = nowTimeDisplay;
+      clearScreen();
+      //Serial.println(F("timer"));
+      goToSleep();
+    }
+  }
+}
 
 void startScreen() {
-  pMainGraphics = new MainGraphics();
-  pinMode(17, OUTPUT);
-  digitalWrite(17, HIGH);
+  /*pinMode(17, OUTPUT);
+    digitalWrite(17, HIGH);*/
   tft.initR(INITR_MINI160x80_PLUGIN);  // Init ST7735S mini display
   tft.setSPISpeed(40000000);
   tft.setRotation(1);
   //tft.setFont(&FreeSans9pt7b);
-  tft.fillScreen(ST77XX_BLACK);
   tft.cp437(true);
-  //pMainGraphics->start();
+  clearScreen();
 }
 
 void screenOn() {
-  displayOn = false;
-  pMainGraphics->stop();
-  pMainGraphics->start();
+  //Serial.println(F("screen on"));
   tft.enableDisplay(true);
-  displayOn = true;
+  resetTimer();
 }
 
 void clearScreen() {
+  tft.enableDisplay(false);
   tft.fillScreen(ST77XX_BLACK);
 }
 
 void displayNotification(MESSAGE* message) {
+  //setCpuFrequencyMhz(240);
+  clearScreen();
   canvas.setFont();
-  screenOn();
   //tft.fillScreen(ST77XX_BLACK);
   tft.fillRoundRect(0, 0, 160, 80, 8, 0x2945);
   canvas.fillRect(0, 0, 156, 76, 0x2945);
@@ -108,7 +104,7 @@ void displayNotification(MESSAGE* message) {
   canvas.setTextColor(0xa514 , 0x2945);
   canvas.setTextWrap(true);
   getApp(message->type.c_str());
-  canvas.print(getHora(String(message->dateTime)));
+  canvas.print(getHoraNotificacao(String(message->dateTime)));
   canvas.print("\n\n");
   canvas.drawLine(5, 12, 146, 12, 0x57f9);
   canvas.setTextColor(0x57f9, 0x2945);
@@ -117,12 +113,6 @@ void displayNotification(MESSAGE* message) {
   canvas.setTextColor(0xef9d, 0x2945);
   canvas.print(String(message->text.c_str()));
   tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
-}
-
-void testdrawtext(String text, uint16_t color) {
-  clearScreen();
-  tft.setCursor(0, 0);
-  tft.setTextColor(color);
-  tft.setTextWrap(true);
-  tft.print(text);
+  screenOn();
+  //setCpuFrequencyMhz(40);
 }

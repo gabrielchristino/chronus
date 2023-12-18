@@ -9,9 +9,7 @@ static BLEUUID dataSourceCharacteristicUUID("22EAC6E9-24D6-4BB5-BE44-B36ACE7C7BF
 uint8_t latestMessageID[4];
 boolean pendingNotification = false;
 boolean incomingCall = false;
-uint8_t acceptCall = 0;
 
-std::stack<MESSAGE> listMessage;
 
 std::map<uint32_t, MESSAGE*> notificationList;
 
@@ -22,75 +20,62 @@ BLERemoteCharacteristic* pControlPointCharacteristic;
 class MySecurity : public BLESecurityCallbacks {
 
     uint32_t onPassKeyRequest() {
-      //ESP_LOGI(LOG_TAG, "PassKeyRequest");
       return 123456;
     }
 
     void onPassKeyNotify(uint32_t pass_key) {
-      //ESP_LOGI(LOG_TAG, "On passkey Notify number:%d", pass_key);
     }
 
     bool onSecurityRequest() {
-      //ESP_LOGI(LOG_TAG, "On Security Request");
       return true;
     }
 
     bool onConfirmPIN(unsigned int) {
-      //ESP_LOGI(LOG_TAG, "On Confrimed Pin Request");
       return true;
     }
 
     void onAuthenticationComplete(esp_ble_auth_cmpl_t cmpl) {
-      //ESP_LOGI(LOG_TAG, "Starting BLE work!");
       if (cmpl.success) {
         uint16_t length;
         esp_ble_gap_get_whitelist_size(&length);
-        //ESP_LOGI(LOG_TAG, "size: %d", length);
       }
     }
 };
 
-    static void acceptCallF(BLERemoteCharacteristic* pControlPointCharacteristic) {
-      const uint8_t vResponse[] = {0x02,   latestMessageID[0], latestMessageID[1], latestMessageID[2], latestMessageID[3],   0x00};
-      pControlPointCharacteristic->writeValue((uint8_t*)vResponse, 6, true);
+static void acceptCallF(BLERemoteCharacteristic* pControlPointCharacteristic) {
+  const uint8_t vResponse[] = {0x02,   latestMessageID[0], latestMessageID[1], latestMessageID[2], latestMessageID[3],   0x00};
+  pControlPointCharacteristic->writeValue((uint8_t*)vResponse, 6, true);
+}
 
-      acceptCall = 0;
-      //incomingCall = false;
-    }
+static void endCall(BLERemoteCharacteristic* pControlPointCharacteristic) {
+  const uint8_t vResponse[] = {0x02,   latestMessageID[0], latestMessageID[1], latestMessageID[2], latestMessageID[3],   0x01};
+  pControlPointCharacteristic->writeValue((uint8_t*)vResponse, 6, true);
+  incomingCall = false;
+}
 
-    static void endCall(BLERemoteCharacteristic* pControlPointCharacteristic) {
-      const uint8_t vResponse[] = {0x02,   latestMessageID[0], latestMessageID[1], latestMessageID[2], latestMessageID[3],   0x01};
-      pControlPointCharacteristic->writeValue((uint8_t*)vResponse, 6, true);
-
-      acceptCall = 0;
-      incomingCall = false;
-    }
+static void dimissNotification(BLERemoteCharacteristic* pControlPointCharacteristic, MESSAGE *notification) {
+  const uint8_t vResponse[] = {0x02,   notification->latestMessageID[0], notification->latestMessageID[1], notification->latestMessageID[2], notification->latestMessageID[3],   0x01};
+  pControlPointCharacteristic->writeValue((uint8_t*)vResponse, 6, true);
+  incomingCall = false;
+}
 
 std::map<uint32_t, MESSAGE*>::iterator it(uint32_t uuid) {
   return notificationList.find(uuid);
 }
 
+bool hasNotifications() {
+  return notificationList.size() > 0;
+}
+
 void removeNotification(uint32_t uuid) {
-  if (notificationList.size() > 0) notificationList.erase(it(uuid));
+  if (hasNotifications()) notificationList.erase(it(uuid));
 }
 
 std::map<uint32_t, MESSAGE*>::iterator getLastNotification() {
   std::map<uint32_t, MESSAGE*>::iterator it = --notificationList.end();
-
-  latestMessageID[0] = it->second->latestMessageID[0];
-  latestMessageID[1] = it->second->latestMessageID[1];
-  latestMessageID[2] = it->second->latestMessageID[2];
-  latestMessageID[3] = it->second->latestMessageID[3];
-
+  for (uint8_t i = 0; i < 4 ; i++) latestMessageID[i] = it->second->latestMessageID[i];
   return it;
 }
-
-/*void filterNotification() {
-  std::map<uint32_t, MESSAGE*>::iterator it = getLastNotification();
-  if(it->second->title.indexOf("ChronusSet")> -1) {
-    endCall(pControlPointCharacteristic);
-  }
-}*/
 
 void showLastNotification() {
   if (notificationList.size() > 0) {
@@ -102,22 +87,12 @@ void showLastNotification() {
   }
 }
 
-/*void removeLastNotification() {
-  //ESP_LOGI(LOG_TAG, "deleting last %d", notificationList.size());
-  if (notificationList.size() > 0) notificationList.erase(--notificationList.end());
-  showLastNotification();
-  //ESP_LOGI(LOG_TAG, "deleted last %d", notificationList.size());
-}*/
-
 MESSAGE *getNotification(uint32_t uuid) {
-  //ESP_LOGI(LOG_TAG, "%d", uuid);
   return (it(uuid) != notificationList.end()) ? it(uuid)->second : new MESSAGE();
 }
 
 void addNotification(uint32_t uuid, MESSAGE *notification) {
-
   if (it(uuid)->second == notification) {
-    //ESP_LOGI(LOG_TAG, "erase");
     removeNotification(uuid);
   }
 
@@ -141,51 +116,37 @@ static void dataSourceNotifyCallback(
     message += (char)pData[i];
   }
 
-  //ESP_LOGI(LOG_TAG, "%d %s", pData[5], message.c_str());
-
-
   MESSAGE *notification = getNotification(messageId);
-  //ESP_LOGI(LOG_TAG, "before: %s %s %s %d", String(notification->type), String(notification->title), String(notification->text), notification->isComplete);
 
-  //ESP_LOGI(LOG_TAG, "wait - %d", messageId);
   if (!notification->isComplete) {
     switch (pData[5])
     {
       case 0x0:
         notification->type = message.c_str();
-        //ESP_LOGI(LOG_TAG, "type: %s", message.c_str());
-
         break;
       case 0x1:
-
         notification->title = message.c_str();
-
-        //ESP_LOGI(LOG_TAG, "title: %s", message.c_str());
         break;
       case 0x3:
         notification->text = message.c_str();
-
-        //ESP_LOGI(LOG_TAG, "message: %s", message.c_str());
-
         break;
       case 0x5:
         notification->dateTime = message.c_str();
-        setHora(notification->dateTime);
-
-        //ESP_LOGI(LOG_TAG, "dateTime: %s", message.c_str());
-
         break;
     }
-    //ESP_LOGI(LOG_TAG, "after: %s %s %s %d", String(notification->type), String(notification->title), String(notification->text), notification->isComplete);
   }
-  addNotification(messageId, notification);
   if (!notification->isComplete && String(notification->title) != "" && String(notification->text) != "" && String(notification->dateTime) != "") {
-    //ESP_LOGI(LOG_TAG, "complete: %d", messageId);
-
     notification->isComplete = true;
 
     showLastNotification();
+
+    if (notification->title == "ChronusSet") {
+      String text = notification->text.c_str();
+      if (text.indexOf("ChronusSetDateTime") > -1) setHora(notification->dateTime);
+      if (text.indexOf("ScreenTime") > -1) screenTime = text.substring(text.indexOf("ScreenTime") + 11).toInt();
+    }
   }
+
   addNotification(messageId, notification);
 }
 
@@ -203,38 +164,23 @@ static void NotificationSourceNotifyCallback(
 
   if (pData[0] == 0)
   {
-    //ESP_LOGI(LOG_TAG, "New notification! %d", messageId);
-
     MESSAGE *notification = getNotification(messageId);
 
-    latestMessageID[0] = pData[4];
-    latestMessageID[1] = pData[5];
-    latestMessageID[2] = pData[6];
-    latestMessageID[3] = pData[7];
-
-    notification->latestMessageID[0] = pData[4];
-    notification->latestMessageID[1] = pData[5];
-    notification->latestMessageID[2] = pData[6];
-    notification->latestMessageID[3] = pData[7];
+    for (uint8_t i = 0; i < 4 ; i++) {
+      latestMessageID[i] = pData[i + 4];
+      notification->latestMessageID[i] = pData[i + 4];
+    }
 
     addNotification(messageId, notification);
   }
   else if (pData[0] == 1)
   {
-    //ESP_LOGI(LOG_TAG, "Notification Modified");
     if (pData[2] == 1) {
       incomingCall = true;
     }
-    //ESP_LOGI(LOG_TAG, "Call Changed!");
   }
   else if (pData[0] == 2)
   {
-
-    //MESSAGE *notification = getNotification(messageId);
-
-    //ESP_LOGI(LOG_TAG, "Notification Removed! %s", notification->text);
-
-    //if (it(messageId) != notificationList.end())
     removeNotification(messageId);
     showLastNotification();
 
@@ -245,13 +191,28 @@ static void NotificationSourceNotifyCallback(
   pendingNotification = true;
 }
 
+
+void RunButtonsNotifications(void * parameter) {
+      btnUp.clickBle(acceptCallF, pControlPointCharacteristic);
+      btnDown.clickBle(endCall, pControlPointCharacteristic);
+      btnTouch.click(showLastNotification);
+}
+
+void readButtons() {
+  if (hasNotifications()) {
+    
+  } else {
+//    btnUp.click(clickUp);
+//    btnDown.click(clickDown);
+//    btnTouch.click(clickOk);
+  }
+}
+
 /**
    Become a BLE client to a remote BLE server.  We are passed in the address of the BLE server
    as the input parameter when the task is created.
 */
 class MyClient: public Task {
-
-
     void run(void* data) {
 
       BLEAddress* pAddress = (BLEAddress*)data;
@@ -270,13 +231,11 @@ class MyClient: public Task {
       // Obtain a reference to the service we are after in the remote BLE server.
       BLERemoteService* pAncsService = pClient->getService(ancsServiceUUID);
       if (pAncsService == nullptr) {
-        //ESP_LOGI(LOG_TAG, "Failed to find our service UUID: %s", ancsServiceUUID.toString().c_str());
         return;
       }
       // Obtain a reference to the characteristic in the service of the remote BLE server.
       BLERemoteCharacteristic* pNotificationSourceCharacteristic = pAncsService->getCharacteristic(notificationSourceCharacteristicUUID);
       if (pNotificationSourceCharacteristic == nullptr) {
-        //ESP_LOGI(LOG_TAG, "Failed to find our characteristic UUID: %s", notificationSourceCharacteristicUUID.toString().c_str());
         return;
       }
       // Obtain a reference to the characteristic in the service of the remote BLE server.
@@ -299,15 +258,13 @@ class MyClient: public Task {
       /** END ANCS SERVICE **/
 
       while (1) {
-        if (notificationList.size() > 0) btnUp.clickBle(acceptCallF, pControlPointCharacteristic);
-        if (notificationList.size() > 0) btnDown.clickBle(endCall, pControlPointCharacteristic);
-        if (notificationList.size() > 0) {btnTouch.touched(screenOn);}else{btnTouch.touched(getHora);}
+
 
         if (pendingNotification || incomingCall) {
           // CommandID: CommandIDGetNotificationAttributes
           // 32bit uid
           // AttributeID
-          // Serial.println("Requesting details...");
+          // //Serial.println("Requesting details...");
           const uint8_t vIdentifier[] = {0x0,   latestMessageID[0], latestMessageID[1], latestMessageID[2], latestMessageID[3],   0x0};
           pControlPointCharacteristic->writeValue((uint8_t*)vIdentifier, 6, true);
           const uint8_t vTitle[] = {0x0,   latestMessageID[0], latestMessageID[1], latestMessageID[2], latestMessageID[3],   0x1, 0x0, 0x10};
