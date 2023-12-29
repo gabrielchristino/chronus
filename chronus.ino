@@ -24,6 +24,7 @@ struct MESSAGE {
 
 static char LOG_TAG[] = "ChonvsANCS";
 
+Task* pApp ;
 Task* pHome ;
 Task* pConfig ;
 Task* pScreenTime ;

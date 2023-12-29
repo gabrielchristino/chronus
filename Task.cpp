@@ -73,7 +73,9 @@ void Task::start(void* taskData) {
     ESP_LOGW(tag, "Task::start - There might be a task already running!");
   }
   m_taskData = taskData;
-  ::xTaskCreatePinnedToCore(&runTask, m_taskName.c_str(), m_stackSize, this, m_priority, &m_handle, m_coreId);
+  //::xTaskCreatePinnedToCore(&runTask, m_taskName.c_str(), m_stackSize, this, m_priority, &m_handle, m_coreId);
+
+  ::xTaskCreate( &runTask, m_taskName.c_str(), m_stackSize, this, m_priority, &m_handle );
 } // start
 
 

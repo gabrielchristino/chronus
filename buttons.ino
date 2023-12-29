@@ -30,8 +30,3 @@ void setButtons() {
   btnDown.pin = T5;
   btnOk.pin = T0;
 }
-
-class runButtons: public Task {
-    void run(void* data) {
-    }
-};
