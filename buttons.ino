@@ -1,23 +1,15 @@
-#define THRESHOLD      40
+#define THRESHOLD      30
 struct BTN {
   uint8_t pin;
   bool lastState;
   int lastTime;
   void click(void (*callback)()) {
-    bool state = (touchRead(pin) < THRESHOLD);
+    uint8_t valor = touchRead(pin);
+
+    bool state = (valor < THRESHOLD && valor > 0);
     int nowTime = millis();
     if (!state && state != lastState && (nowTime - lastTime > 500)) {
       callback();
-      lastTime = nowTime;
-    }
-    lastState = state;
-  };
-  void clickBle(void (*callback)(BLERemoteCharacteristic*), BLERemoteCharacteristic*BLE) {
-    bool state = (touchRead(pin) < THRESHOLD);
-    int nowTime = millis();
-    if (!state && state != lastState && (nowTime - lastTime > 500)) {
-      //ESP_LOGI(LOG_TAG, "botao");
-      callback(BLE);
       lastTime = nowTime;
     }
     lastState = state;
@@ -26,7 +18,7 @@ struct BTN {
 
 BTN btnUp;
 BTN btnDown;
-BTN btnTouch;
+BTN btnOk;
 
 
 void setButtons() {
@@ -36,7 +28,7 @@ void setButtons() {
 
   btnUp.pin = T9;
   btnDown.pin = T5;
-  btnTouch.pin = T0;
+  btnOk.pin = T0;
 }
 
 class runButtons: public Task {

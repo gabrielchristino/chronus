@@ -53,12 +53,6 @@ static void endCall(BLERemoteCharacteristic* pControlPointCharacteristic) {
   incomingCall = false;
 }
 
-static void dimissNotification(BLERemoteCharacteristic* pControlPointCharacteristic, MESSAGE *notification) {
-  const uint8_t vResponse[] = {0x02,   notification->latestMessageID[0], notification->latestMessageID[1], notification->latestMessageID[2], notification->latestMessageID[3],   0x01};
-  pControlPointCharacteristic->writeValue((uint8_t*)vResponse, 6, true);
-  incomingCall = false;
-}
-
 std::map<uint32_t, MESSAGE*>::iterator it(uint32_t uuid) {
   return notificationList.find(uuid);
 }
@@ -77,13 +71,39 @@ std::map<uint32_t, MESSAGE*>::iterator getLastNotification() {
   return it;
 }
 
+class OnNotificationButtons: public Task {
+    void run(void *data) {
+      Serial.println("btn notifi");
+      for (;;) {
+        delay(100);
+        //Serial.println("ble");
+        btnUp.click([]{acceptCallF(pControlPointCharacteristic);});
+        btnDown.click([]{endCall(pControlPointCharacteristic);});
+        btnOk.click(showLastNotification);
+      }
+    }
+};
+
 void showLastNotification() {
-  if (notificationList.size() > 0) {
+  if (hasNotifications()) {
     std::map<uint32_t, MESSAGE*>::iterator it = getLastNotification();
-    displayNotification(it->second);
+    //displayNotification(it->second);
+    
+    if (pDisplayNotification) pDisplayNotification->stop();
+    pDisplayNotification = new DisplayNotification();
+    pDisplayNotification->setStackSize(1500);
+    pDisplayNotification->start(it->second);
+
+    
+    pButtonNotification = new OnNotificationButtons();
+    pButtonNotification->setStackSize(1500);
+    pButtonNotification->start();
+    killAll(4);
 
   } else {
     clearScreen();
+    delay(500);
+    callHome();
   }
 }
 
@@ -149,7 +169,6 @@ static void dataSourceNotifyCallback(
 
   addNotification(messageId, notification);
 }
-
 static void NotificationSourceNotifyCallback(
   BLERemoteCharacteristic* pNotificationSourceCharacteristic,
   uint8_t* pData,
@@ -189,23 +208,6 @@ static void NotificationSourceNotifyCallback(
     }
   }
   pendingNotification = true;
-}
-
-
-void RunButtonsNotifications(void * parameter) {
-      btnUp.clickBle(acceptCallF, pControlPointCharacteristic);
-      btnDown.clickBle(endCall, pControlPointCharacteristic);
-      btnTouch.click(showLastNotification);
-}
-
-void readButtons() {
-  if (hasNotifications()) {
-    
-  } else {
-//    btnUp.click(clickUp);
-//    btnDown.click(clickDown);
-//    btnTouch.click(clickOk);
-  }
 }
 
 /**

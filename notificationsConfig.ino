@@ -1,7 +1,7 @@
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer, esp_ble_gatts_cb_param_t *param) {
       MyClient* pMyClient = new MyClient();
-      pMyClient->setStackSize(30000);
+      pMyClient->setStackSize(10000);
       pMyClient->start(new BLEAddress(param->connect.remote_bda));
     };
 

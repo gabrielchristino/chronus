@@ -2,15 +2,11 @@
 
 
 #define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  10        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  60*60*24        /* Time ESP32 will go to sleep (in seconds) */
 
-// Essa TaskHandle irá permitir 
-TaskHandle_t task2Handle = NULL;
-void task1(void * parameter){
-   // A lógica da sua tarefa
-}
 
 void goToSleep() {
+  digitalWrite(5, LOW);
   touchSleepWakeUpEnable(T0, THRESHOLD);
   touchSleepWakeUpEnable(T5, THRESHOLD);
   touchSleepWakeUpEnable(T9, THRESHOLD);
@@ -20,7 +16,8 @@ void goToSleep() {
   esp_deep_sleep_start();
 }
 void wakeUpReason() {
-  //Serial.begin(115200);
+
+  Serial.begin(115200);
 
   /*#if defined(BOD_ENABLE)
     init_bod();
@@ -31,29 +28,30 @@ void wakeUpReason() {
   SampleSecureServer();
   mountSpiffs();
   startScreen();
-  //setCpuFrequencyMhz(40);
+
+
   touch_pad_t touchPin;
   touchPin = esp_sleep_get_touchpad_wakeup_status();
+  //goToSleep();
+
+  TimerScreen* pTimerScreen = new TimerScreen();
+  pTimerScreen->setStackSize(1000);
+  pTimerScreen->start();
 
   
-/*  xTaskCreate(
-    timerScreen,    // Função a ser chamada
-    "timerScreen",  // Nome da tarefa
-    1000,            // Tamanho (bytes)
-    NULL,            // Parametro a ser passado
-    1,               // Prioridade da Tarefa
-    NULL      // Task handle
-  );*/
+  pHome = new AppHome();
+  pHome->setStackSize(3000);
+  pRelogio = new GetHora();
+  pRelogio->setStackSize(3000);
+  pConfig = new AppConfig();
+  pConfig->setStackSize(3000);
+  pScreenTime = new AppScreenTime();
+  pScreenTime->setStackSize(3000);
 
-  //if (touchPin == 0) {
-/*xTaskCreate(
-    task1,
-    "Task 1",
-    1000,
-    NULL,
-    2,
-    &task2Handle            // Task handle
-);*/
-  //}
+  if (touchPin == 0) {
+    callGetHora();
+  } else {
+    callHome();
+  }
 
 }

@@ -22,18 +22,30 @@ struct MESSAGE {
   bool isComplete;
 };
 
-//static char LOG_TAG[] = "ChonvsANCS";
+static char LOG_TAG[] = "ChonvsANCS";
 
-TaskHandle_t task1Handle = NULL;
-
-uint8_t posicaoMenu = 0;
+Task* pHome ;
+Task* pConfig ;
+Task* pScreenTime ;
+Task* pRelogio ;
+Task* pDisplayNotification ;
+Task* pButtonNotification ;
 
 void setup()
 {
+  
   wakeUpReason();
 }
 void loop()
 {
   //handleOTA();
-  readButtons();
+}
+
+void killAll(uint8_t id) {
+  if (id != 0) if (pHome) pHome->stop();
+  if (id != 1) if (pConfig) pConfig->stop();
+  if (id != 2) if (pScreenTime) pScreenTime->stop();
+  if (id != 3) if (pRelogio) pRelogio->stop();
+  if (id != 4) if (pDisplayNotification) pDisplayNotification->stop();
+  if (id != 4) if (pButtonNotification) pButtonNotification->stop();
 }

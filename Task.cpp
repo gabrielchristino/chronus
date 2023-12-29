@@ -68,6 +68,7 @@ void Task::runTask(void* pTaskInstance) {
    @return N/A.
 */
 void Task::start(void* taskData) {
+  ESP_LOGW(tag, "Task::start - There might be a task already running!");
   if (m_handle != nullptr) {
     ESP_LOGW(tag, "Task::start - There might be a task already running!");
   }

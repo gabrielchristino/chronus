@@ -1,6 +1,9 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
-//#include <Fonts/FreeSans9pt7b.h>
+
+#include <Fonts/FreeSans24pt7b.h>
+#include <Fonts/FreeSans9pt7b.h>
+
 #include <SPI.h>
 
 #define TFT_CS          21
@@ -58,22 +61,26 @@ void resetTimer() {
   lastTimeDisplay = nowTimeDisplay;
 }
 
-void timerScreen(void * parameter) {
-  while (1) {
-    nowTimeDisplay = millis();
-    if (nowTimeDisplay - lastTimeDisplay > screenTime) {
-      if (task1Handle != NULL) vTaskDelete(task1Handle);
-      lastTimeDisplay = nowTimeDisplay;
-      clearScreen();
-      //Serial.println(F("timer"));
-      goToSleep();
+class TimerScreen: public Task {
+    void run(void *data) {
+      while (1) {
+        nowTimeDisplay = millis();
+        if (nowTimeDisplay - lastTimeDisplay > screenTime) {
+          lastTimeDisplay = nowTimeDisplay;
+          clearScreen();
+          Serial.println(F("sleep"));
+          goToSleep();
+        }
+      }
     }
-  }
-}
+};
 
 void startScreen() {
-  /*pinMode(17, OUTPUT);
-    digitalWrite(17, HIGH);*/
+  //pinMode(17, OUTPUT);
+  //digitalWrite(17, HIGH);
+  pinMode(5, OUTPUT);
+  digitalWrite(5, HIGH);
+
   tft.initR(INITR_MINI160x80_PLUGIN);  // Init ST7735S mini display
   tft.setSPISpeed(40000000);
   tft.setRotation(1);
@@ -84,6 +91,7 @@ void startScreen() {
 
 void screenOn() {
   //Serial.println(F("screen on"));
+  digitalWrite(5, HIGH);
   tft.enableDisplay(true);
   resetTimer();
 }
@@ -93,26 +101,70 @@ void clearScreen() {
   tft.fillScreen(ST77XX_BLACK);
 }
 
-void displayNotification(MESSAGE* message) {
-  //setCpuFrequencyMhz(240);
+class DisplayNotification: public Task {
+    void run(void *data) {
+      //void displayNotification(MESSAGE* message) {
+      MESSAGE* message = (MESSAGE*)data;
+      //setCpuFrequencyMhz(240);
+      clearScreen();
+      canvas.setFont();
+      //tft.fillScreen(ST77XX_BLACK);
+      tft.fillRoundRect(0, 0, 160, 80, 8, 0x2945);
+      canvas.fillRect(0, 0, 156, 76, 0x2945);
+      canvas.setCursor(0, 2);
+      canvas.setTextColor(0xa514 , 0x2945);
+      canvas.setTextWrap(true);
+      getApp(message->type.c_str());
+      canvas.print(getHoraNotificacao(String(message->dateTime)));
+      canvas.print("\n\n");
+      canvas.drawLine(5, 12, 146, 12, 0x57f9);
+      canvas.setTextColor(0x57f9, 0x2945);
+      canvas.print(String(message->title.c_str()));
+      canvas.print("\n");
+      canvas.setTextColor(0xef9d, 0x2945);
+      canvas.print(String(message->text.c_str()));
+      tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
+      screenOn();
+    }
+};
+
+static void menuOptions(String menuName[], uint8_t item, uint16_t length) {
   clearScreen();
-  canvas.setFont();
-  //tft.fillScreen(ST77XX_BLACK);
-  tft.fillRoundRect(0, 0, 160, 80, 8, 0x2945);
-  canvas.fillRect(0, 0, 156, 76, 0x2945);
-  canvas.setCursor(0, 2);
-  canvas.setTextColor(0xa514 , 0x2945);
-  canvas.setTextWrap(true);
-  getApp(message->type.c_str());
-  canvas.print(getHoraNotificacao(String(message->dateTime)));
-  canvas.print("\n\n");
-  canvas.drawLine(5, 12, 146, 12, 0x57f9);
-  canvas.setTextColor(0x57f9, 0x2945);
-  canvas.print(String(message->title.c_str()));
-  canvas.print("\n");
-  canvas.setTextColor(0xef9d, 0x2945);
-  canvas.print(String(message->text.c_str()));
-  tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
-  screenOn();
-  //setCpuFrequencyMhz(40);
+  if (menuName[item] && menuName[item] != "") {
+    
+    
+    //tft.fillScreen(ST77XX_BLACK);
+    tft.fillRoundRect(0, 0, 160, 80, 8, 0x2945);
+    canvas.fillRect(0, 0, 156, 76, 0x2945);
+    canvas.setTextWrap(true);
+
+    int16_t x1, y1 = 0;
+    uint16_t w, h = 0;
+    canvas.getTextBounds(menuName[item], 0, 0, &x1, &y1, &w, &h); // Calculate w/h of text
+    uint8_t x = (160 - w) / 2;
+    uint8_t y = (80 - h) / 2;
+    canvas.setCursor(x, y);
+
+    canvas.setTextColor(0x57f9, 0x2945);
+    canvas.setFont(&FreeSans9pt7b);
+    if (item < length) canvas.println(menuName[item]);
+
+    canvas.setFont();
+    canvas.setTextColor(0xa514 , 0x2945);
+    
+    canvas.setCursor(x, y - h*4);
+    if ((item - 2) < length) canvas.println(menuName[item - 2]);
+    
+    canvas.setCursor(x, y - h*2.5);
+    if ((item - 1) < length) canvas.println(menuName[item - 1]);
+    
+    canvas.setCursor(x, y + h*1.5);
+    if ((item + 1) < length) canvas.println(menuName[item + 1]);
+    
+    canvas.setCursor(x, y + h*3);
+    if ((item + 2) < length) canvas.println(menuName[item + 2]);
+
+    tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
+    screenOn();
+  }
 }
