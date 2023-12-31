@@ -8,30 +8,27 @@ void (*AppConfigMenuListVoid[2])() {
   callScreenTime
 };
 uint8_t AppConfigPosicaoMenu = 0;
-class AppConfig: public Task {
-    void run(void *data) {
-      //menuOptions(AppConfigMenuListName,AppConfigPosicaoMenu, 2);
-      Serial.println("Config");
-      for (;;) {
-        delay(10);
+void AppConfig(void *data) {
+  Serial.println("Config");
+  menuOptions(AppConfigMenuListName,0, 2);
+  for (;;) {
+    delay(10);
 
-        btnUp.click([] {novaPosicaoMenu(1);});
-        btnDown.click([] {novaPosicaoMenu(-1);});
-        btnOk.click([] {novaPosicaoMenu(0);});
-      }
-    }
+    btnUp.click([] {AppConfigNovaPosicaoMenu(1);});
+    btnDown.click([] {AppConfigNovaPosicaoMenu(-1);});
+    btnOk.click([] {AppConfigNovaPosicaoMenu(0);});
+  }
+}
 
-    static void novaPosicaoMenu(uint8_t novaPos) {
-      AppConfigPosicaoMenu += novaPos;
-      menuOptions(AppConfigMenuListName,AppConfigPosicaoMenu, 2);
-      if (novaPos == 0) AppConfigMenuListVoid[AppConfigPosicaoMenu]();
-      resetTimer();
-    }
-};
+static void AppConfigNovaPosicaoMenu(uint8_t novaPos) {
+  AppConfigPosicaoMenu += novaPos;
+  menuOptions(AppConfigMenuListName, AppConfigPosicaoMenu, 2);
+  if (novaPos == 0) {AppConfigMenuListVoid[AppConfigPosicaoMenu]();vTaskDelete(NULL);}
+  resetTimer();
+}
 
 void callConfig() {
-  pConfig->start();
-  killAll(1);
+  xTaskCreate( AppConfig, "AppConfig", 4000, NULL, 1, &pConfig );
 }
 
 
@@ -41,28 +38,25 @@ void callConfig() {
 String AppScreenTimeMenuListName[1] = {
   "screen time " + String(screenTime)
 };
-class AppScreenTime: public Task {
-    void run(void *data) {
-      clearScreen();
-      for (;;) {
-        delay(10);
+void AppScreenTime(void *data) {
+  clearScreen();
+  for (;;) {
+    delay(10);
 
-        btnUp.click([] {newScreenTime(1000);});
-        btnDown.click([] {newScreenTime(-1000);});
-        btnOk.click([] {newScreenTime(0);});
+    btnUp.click([] {newScreenTime(1000);});
+    btnDown.click([] {newScreenTime(-1000);});
+    btnOk.click([] {newScreenTime(0);});
 
-      }
-    }
+  }
+}
 
-    static void newScreenTime(uint8_t newTime) {
-      screenTime += newTime;
-      menuOptions(AppScreenTimeMenuListName, 0, 1);
-      if (newTime == 0) callHome();
-      resetTimer();
-    }
-};
+static void newScreenTime(uint8_t newTime) {
+  screenTime += newTime;
+  menuOptions(AppScreenTimeMenuListName, 0, 1);
+  if (newTime == 0) {callHome();vTaskDelete(NULL);}
+  resetTimer();
+}
 
 void callScreenTime() {
-  pScreenTime->start();
-  killAll(2);
+  xTaskCreate( AppScreenTime, "AppScreenTime", 4000, NULL, 1, &pAppScreenTime );
 }

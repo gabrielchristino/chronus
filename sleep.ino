@@ -34,19 +34,7 @@ void wakeUpReason() {
   touchPin = esp_sleep_get_touchpad_wakeup_status();
   //goToSleep();
 
-  TimerScreen* pTimerScreen = new TimerScreen();
-  pTimerScreen->setStackSize(1000);
-  pTimerScreen->start();
-
-  
-  pHome = new AppHome();
-  pHome->setStackSize(3000);
-  pRelogio = new GetHora();
-  pRelogio->setStackSize(3000);
-  pConfig = new AppConfig();
-  pConfig->setStackSize(3000);
-  pScreenTime = new AppScreenTime();
-  pScreenTime->setStackSize(3000);
+  callTimerScreen();
 
   if (touchPin == 0) {
     callGetHora();

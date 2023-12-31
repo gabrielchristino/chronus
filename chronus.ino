@@ -24,13 +24,25 @@ struct MESSAGE {
 
 static char LOG_TAG[] = "ChonvsANCS";
 
-Task* pApp ;
-Task* pHome ;
-Task* pConfig ;
-Task* pScreenTime ;
-Task* pRelogio ;
-Task* pDisplayNotification ;
-Task* pButtonNotification ;
+TaskHandle_t pApp ;
+
+TaskHandle_t pHome ;
+void AppHome (void *data);
+
+TaskHandle_t pConfig ;
+void AppConfig(void *data);
+
+TaskHandle_t pAppScreenTime ;
+void AppScreenTime(void *data);
+
+TaskHandle_t pRelogio ;
+void GetHora (void *data);
+
+TaskHandle_t pDisplayNotification ;
+void DisplayNotification (void *data);
+
+TaskHandle_t pButtonNotification ;
+void OnNotificationButtons (void *data);
 
 void setup()
 {
@@ -40,13 +52,4 @@ void setup()
 void loop()
 {
   //handleOTA();
-}
-
-void killAll(uint8_t id) {
-  if (id != 0) if (pHome) pHome->stop();
-  if (id != 1) if (pConfig) pConfig->stop();
-  if (id != 2) if (pScreenTime) pScreenTime->stop();
-  if (id != 3) if (pRelogio) pRelogio->stop();
-  if (id != 4) if (pDisplayNotification) pDisplayNotification->stop();
-  if (id != 4) if (pButtonNotification) pButtonNotification->stop();
 }

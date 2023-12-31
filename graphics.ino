@@ -61,8 +61,7 @@ void resetTimer() {
   lastTimeDisplay = nowTimeDisplay;
 }
 
-class TimerScreen: public Task {
-    void run(void *data) {
+void TimerScreen (void *data) {
       while (1) {
         nowTimeDisplay = millis();
         if (nowTimeDisplay - lastTimeDisplay > screenTime) {
@@ -73,7 +72,10 @@ class TimerScreen: public Task {
         }
       }
     }
-};
+
+void callTimerScreen() {
+  xTaskCreate( TimerScreen, "TimerScreen", 1000, NULL, 1, NULL );
+}
 
 void startScreen() {
   //pinMode(17, OUTPUT);
@@ -101,8 +103,7 @@ void clearScreen() {
   tft.fillScreen(ST77XX_BLACK);
 }
 
-class DisplayNotification: public Task {
-    void run(void *data) {
+void DisplayNotification (void *data) {
       //void displayNotification(MESSAGE* message) {
       MESSAGE* message = (MESSAGE*)data;
       //setCpuFrequencyMhz(240);
@@ -125,14 +126,12 @@ class DisplayNotification: public Task {
       canvas.print(String(message->text.c_str()));
       tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
       screenOn();
+      vTaskDelete(NULL);
     }
-};
 
 static void menuOptions(String menuName[], uint8_t item, uint16_t length) {
   clearScreen();
   if (menuName[item] && menuName[item] != "") {
-    
-    
     //tft.fillScreen(ST77XX_BLACK);
     tft.fillRoundRect(0, 0, 160, 80, 8, 0x2945);
     canvas.fillRect(0, 0, 156, 76, 0x2945);
@@ -153,10 +152,10 @@ static void menuOptions(String menuName[], uint8_t item, uint16_t length) {
     canvas.setTextColor(0xa514 , 0x2945);
     
     canvas.setCursor(x, y - h*4);
-    if ((item - 2) < length) canvas.println(menuName[item - 2]);
+    if ((item - 2) > 0) canvas.println(menuName[item - 2]);
     
     canvas.setCursor(x, y - h*2.5);
-    if ((item - 1) < length) canvas.println(menuName[item - 1]);
+    if ((item - 1) > 0) canvas.println(menuName[item - 1]);
     
     canvas.setCursor(x, y + h*1.5);
     if ((item + 1) < length) canvas.println(menuName[item + 1]);
@@ -166,5 +165,6 @@ static void menuOptions(String menuName[], uint8_t item, uint16_t length) {
 
     tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
     screenOn();
+  Serial.println("menu "+menuName[item]);
   }
 }

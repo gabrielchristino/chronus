@@ -25,59 +25,56 @@ void setHora (String h) {
 }
 
 
-class GetHora: public Task {
-    void run(void *data) {
-      //setCpuFrequencyMhz(240);
-      //clearScreen();
-      time_t tt = time(NULL);
-      _tm = *gmtime(&tt);
-      char data_formatada[64];
+void GetHora (void *data) {
+  //setCpuFrequencyMhz(240);
+  //clearScreen();
+  time_t tt = time(NULL);
+  _tm = *gmtime(&tt);
+  char data_formatada[64];
 
-      strftime(data_formatada, 64, "%H:%M", &_tm);
+  strftime(data_formatada, 64, "%H:%M", &_tm);
 
-      tft.setTextColor(0xef5d);
-      tft.setTextWrap(true);
-      tft.setFont(&FreeSans24pt7b);
+  tft.setTextColor(0xef5d);
+  tft.setTextWrap(true);
+  tft.setFont(&FreeSans24pt7b);
 
-      drawJpeg("/fundo.jpg", 0, 0);
+  drawJpeg("/fundo.jpg", 0, 0);
 
-      int16_t x1, y1;
-      uint16_t w, h;
-      tft.getTextBounds(data_formatada, 0, 0, &x1, &y1, &w, &h); // Calculate w/h of text
-      uint8_t x = (160 - w - 10);
-      uint8_t y = h + 5;
-      tft.setCursor(x, y);
+  int16_t x1, y1;
+  uint16_t w, h;
+  tft.getTextBounds(data_formatada, 0, 0, &x1, &y1, &w, &h); // Calculate w/h of text
+  uint8_t x = (160 - w - 10);
+  uint8_t y = h + 5;
+  tft.setCursor(x, y);
 
-      tft.println(data_formatada);
+  tft.println(data_formatada);
 
-      tft.setFont(&FreeSans9pt7b);
-      strftime(data_formatada, 64, "%d %b %a", &_tm);
-      String data_formatada_lower = String(data_formatada);
-      data_formatada_lower.toLowerCase();
-      tft.getTextBounds(data_formatada_lower, 0, 0, &x1, &y1, &w, &h); // Calculate w/h of text
-      x = (160 - w - 10);
-      y = (80 - h + 5);
-      tft.setCursor(x, y);
-      tft.println(data_formatada_lower);
-      //tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
-      screenOn();
-      //setCpuFrequencyMhz(40);
+  tft.setFont(&FreeSans9pt7b);
+  strftime(data_formatada, 64, "%d %b %a", &_tm);
+  String data_formatada_lower = String(data_formatada);
+  data_formatada_lower.toLowerCase();
+  tft.getTextBounds(data_formatada_lower, 0, 0, &x1, &y1, &w, &h); // Calculate w/h of text
+  x = (160 - w - 10);
+  y = (80 - h + 5);
+  tft.setCursor(x, y);
+  tft.println(data_formatada_lower);
+  //tft.drawRGBBitmap(6, 3, canvas.getBuffer(), canvas.width(), canvas.height());
+  screenOn();
+  //setCpuFrequencyMhz(40);
 
-      for (;;) {
-        delay(10);
-        
-        btnUp.click([] {Serial.println("1");callHome();});
-        btnDown.click([] {Serial.println("2");callHome();});
-        //btnOk.click([] {Serial.println("3");callHome();});
-      }
-    }
-};
+  for (;;) {
+    delay(10);
+
+    btnUp.click([] {Serial.println("1"); callHome();vTaskDelete(NULL);});
+    btnDown.click([] {Serial.println("2"); callHome();vTaskDelete(NULL);});
+    //btnOk.click([] {Serial.println("3");callHome();});
+  }
+}
 
 
 void callGetHora() {
   Serial.println("getHora");
-  pRelogio->start();
-  killAll(3);
+  xTaskCreate( GetHora, "GetHora", 3000, NULL, 1, &pRelogio );
 }
 /*
   %a Abbreviated weekday name

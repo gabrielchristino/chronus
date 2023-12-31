@@ -71,8 +71,7 @@ std::map<uint32_t, MESSAGE*>::iterator getLastNotification() {
   return it;
 }
 
-class OnNotificationButtons: public Task {
-    void run(void *data) {
+void OnNotificationButtons (void *data) {
       Serial.println("btn notifi");
       for (;;) {
         delay(100);
@@ -82,23 +81,17 @@ class OnNotificationButtons: public Task {
         btnOk.click(showLastNotification);
       }
     }
-};
 
 void showLastNotification() {
   if (hasNotifications()) {
     std::map<uint32_t, MESSAGE*>::iterator it = getLastNotification();
     //displayNotification(it->second);
     
-    if (pDisplayNotification) pDisplayNotification->stop();
-    pDisplayNotification = new DisplayNotification();
-    pDisplayNotification->setStackSize(1500);
-    pDisplayNotification->start(it->second);
-
+    vTaskDelete(pDisplayNotification);
+    xTaskCreate( DisplayNotification, "DisplayNotification", 1500, NULL, 1, &pDisplayNotification );
     
-    pButtonNotification = new OnNotificationButtons();
-    pButtonNotification->setStackSize(1500);
-    pButtonNotification->start();
-    killAll(4);
+    vTaskDelete(pButtonNotification);
+    xTaskCreate( OnNotificationButtons, "OnNotificationButtons", 1500, NULL, 1, &pButtonNotification );
 
   } else {
     clearScreen();
