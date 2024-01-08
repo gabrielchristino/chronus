@@ -76,3 +76,14 @@ void SampleSecureServer(void)
   pMainBleServer->setStackSize(20000);
   pMainBleServer->start();
 }
+
+
+/*
+
+Station MAC: 34:94:54:D1:92:C4
+SoftAP MAC: 34:94:54:D1:92:C5
+Bluetooth MAC: 34:94:54:D1:92:C6
+Ethernet MAC: 34:94:54:D1:92:C7
+
+python ota.py "34:94:54:D1:92:C6" "firmware.bin"
+ */

@@ -103,9 +103,12 @@ void clearScreen() {
   tft.fillScreen(ST77XX_BLACK);
 }
 
-void DisplayNotification (void *data) {
+void DisplayNotification (void *pvParameters) {
+      Serial.println("aqui");
       //void displayNotification(MESSAGE* message) {
-      MESSAGE* message = (MESSAGE*)data;
+      MESSAGE* message = (MESSAGE*)pvParameters;
+
+      Serial.println(message->text);
       //setCpuFrequencyMhz(240);
       clearScreen();
       canvas.setFont();

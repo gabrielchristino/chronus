@@ -86,11 +86,22 @@ void showLastNotification() {
   if (hasNotifications()) {
     std::map<uint32_t, MESSAGE*>::iterator it = getLastNotification();
     //displayNotification(it->second);
+
+    Serial.println(it->second->text);
     
-    vTaskDelete(pDisplayNotification);
-    xTaskCreate( DisplayNotification, "DisplayNotification", 1500, NULL, 1, &pDisplayNotification );
+    /*if (pDisplayNotification) pDisplayNotification->stop();
+    pDisplayNotification = new DisplayNotification();
+    pDisplayNotification->setStackSize(1500);
+    pDisplayNotification->start(it->second);*/
+
+    //vTaskDelete(pDisplayNotification);
+    xTaskCreate( DisplayNotification, "DisplayNotification", 1500, (void*) &it->second, 1, &pDisplayNotification );
+
+    /*pButtonNotification = new OnNotificationButtons();
+    pButtonNotification->setStackSize(1500);
+    pButtonNotification->start();*/
     
-    vTaskDelete(pButtonNotification);
+    //vTaskDelete(pButtonNotification);
     xTaskCreate( OnNotificationButtons, "OnNotificationButtons", 1500, NULL, 1, &pButtonNotification );
 
   } else {
